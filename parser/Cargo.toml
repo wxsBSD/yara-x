@@ -3,7 +3,7 @@ name = "yara-x-parser"
 description = """
 A parsing library for YARA rules.
 """
-version.workspace = true
+version= "0.8.0"
 authors.workspace = true
 edition.workspace = true
 readme.workspace = true

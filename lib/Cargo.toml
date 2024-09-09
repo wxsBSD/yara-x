@@ -3,7 +3,7 @@ name = "yara-x"
 description = """
 A pure Rust implementation of YARA.
 """
-version.workspace = true
+version= "0.8.0"
 authors.workspace = true
 edition.workspace = true
 readme.workspace = true
