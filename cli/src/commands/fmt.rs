@@ -42,6 +42,7 @@ pub fn exec_fmt(
 
     let formatter = Formatter::new()
         .align_metadata(config.meta.align_values)
+        .required_metadata(config.meta.required)
         .align_patterns(config.patterns.align_values)
         .indent_section_headers(config.rule.indent_section_headers)
         .indent_section_contents(config.rule.indent_section_contents)

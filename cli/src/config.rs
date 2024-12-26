@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::Path;
 
 use figment::{
@@ -5,6 +6,16 @@ use figment::{
     Figment,
 };
 use serde::{Deserialize, Serialize};
+
+/// Types allowed in the required_metadata table of the config file. Used to
+/// require specific metadata identifiers have specific types by "yr fmt".
+#[derive(strum_macros::Display, Deserialize, Serialize, Debug)]
+pub enum MetaValueType {
+    String,
+    Integer,
+    Float,
+    Bool,
+}
 
 /// Configuration structure for "yr" commands.
 #[derive(Deserialize, Serialize, Debug)]
@@ -46,6 +57,8 @@ pub struct Rule {
 pub struct Meta {
     /// Align values to longest key.
     pub align_values: bool,
+    /// Map of required metadata identifiers and their expected type.
+    pub required: HashMap<String, MetaValueType>,
 }
 
 /// Pattern specific formatting information.
@@ -67,7 +80,7 @@ impl Default for Config {
                     empty_line_before_section_header: true,
                     empty_line_after_section_header: false,
                 },
-                meta: Meta { align_values: true },
+                meta: Meta { align_values: true, required: HashMap::new() },
                 patterns: Patterns { align_values: true },
             },
         }

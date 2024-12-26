@@ -15,6 +15,7 @@ let output = File::create("formatted.yar").unwrap();
 Formatter::new().format(input, output).unwrap();
 ```
 */
+use std::collections::HashMap;
 use std::io;
 use std::io::Cursor;
 
@@ -22,6 +23,7 @@ use thiserror::Error;
 
 use tokens::Token::*;
 use tokens::TokenStream;
+use yara_x_parser::ast::{MetaValue, AST};
 use yara_x_parser::cst::SyntaxKind;
 use yara_x_parser::Parser;
 
@@ -64,6 +66,7 @@ pub enum Error {
 /// Formats YARA source code automatically.
 pub struct Formatter {
     align_metadata: bool,
+    required_metadata: HashMap<String, String>,
     align_patterns: bool,
     indent_section_headers: bool,
     indent_section_contents: bool,
@@ -85,6 +88,7 @@ impl Formatter {
     pub fn new() -> Self {
         Formatter {
             align_metadata: true,
+            required_metadata: HashMap::new(),
             align_patterns: true,
             indent_section_headers: true,
             indent_section_contents: true,
@@ -126,6 +130,20 @@ impl Formatter {
     /// The default value is `true`.
     pub fn align_metadata(mut self, yes: bool) -> Self {
         self.align_metadata = yes;
+        self
+    }
+
+    /// Specify required metadata keys and value types.
+    ///
+    /// The formatter uses these to ensure that the required metadata fields are
+    /// present and that they have the correct type.
+    ///
+    /// The default value is an empty map.
+    pub fn required_metadata(
+        mut self,
+        val: HashMap<String, MetaValueType>,
+    ) -> Self {
+        self.required_metadata = val;
         self
     }
 
@@ -345,6 +363,10 @@ impl Formatter {
 
         input.read_to_end(&mut in_buf).map_err(Error::ReadError)?;
 
+        // Before processing for formatting, do linting checks on the AST.
+        let ast = Parser::new(in_buf.as_slice()).into_ast();
+        self.check_required_metadata(&ast);
+
         let stream = Parser::new(in_buf.as_slice()).into_cst_stream();
         let tokens = Tokens::new(stream);
 
@@ -359,6 +381,43 @@ impl Formatter {
         output.write_all(out_buf.get_ref()).map_err(Error::WriteError)?;
 
         Ok(modified)
+    }
+
+    pub fn check_required_metadata(&self, ast: &AST<'_>) {
+        for rule in ast.rules() {
+            // XXX: What about having no metadata but requiring it?
+            // NONE OF THIS IS RIGHT, don't bother reading it. ;)
+            if rule.meta.is_some() {
+                let rule_meta = rule.meta.as_ref().unwrap();
+                for (required_identifier, required_type) in
+                    self.required_metadata.iter()
+                {
+                    if rule_meta.iter().any(|meta| {
+                        if required_identifier.eq(meta.identifier.name) {
+                            if required_type.eq("string") {
+                                match meta.value {
+                                    MetaValue::String(_)
+                                    | MetaValue::Bytes(_) => return true,
+                                    _ => {
+                                        println!(
+                                            "Type incorrect for {}",
+                                            required_identifier
+                                        );
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                        false
+                    }) {
+                        println!(
+                            "Required identifier missing: {}",
+                            required_identifier
+                        );
+                    }
+                }
+            }
+        }
     }
 }
 

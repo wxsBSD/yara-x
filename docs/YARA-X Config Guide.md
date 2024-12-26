@@ -143,4 +143,22 @@ meta.align_values = true
 
 # Same as meta.align_values but applies to patterns.
 patterns.align_values = true
+
+# Table (dictionary) of required metadata identifiers and their corresponding
+# types.
+#
+# The key is the identifier and the value is the required type for that
+# identifier. Supported types are "string", "int", "float", or "bool".
+#
+# To require that there be an "author" metadata field and the value must be a
+# string, and that there needs to be a date field and the value must be an
+# integer use this:
+#
+# meta.required = { author = "string", date = "int" }
+#
+# NOTE: Inline tables must be expressed as a single line and no trailing comma
+# is allowed.
+#
+# The default value is an empty table.
+meta.required = {}
 ```
